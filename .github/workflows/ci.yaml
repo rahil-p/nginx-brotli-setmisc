@@ -1,0 +1,44 @@
+name: ci
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-latest:
+    name: Publish to Docker Hub
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        context:
+          - alpine_version: 3.15
+            nginx_version: 1.20.2
+            ndk_version: 0.3.1
+            ngx_set_misc_version: 0.33
+            ngx_brotli_commit: 9aec15e2aa6feea2113119ba06460af70ab3ea62
+
+    steps:
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Authenticate
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_ID }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: rahilp/nginx-brotli-setmisc:${{ matrix.context.nginx_version }}
+          build-args: |
+            ALPINE_VERSION=${{ matrix.context.alpine_version }}
+            NGINX_VERSION=${{ matrix.context.nginx_version }}
+            NDK_VERSION=${{ matrix.context.ndk_version }}
+            NGX_SET_MISC_VERSION=${{ matrix.context.ngx_set_misc_version }}
+            NGX_BROTLI_COMMIT=${{ matrix.context.ngx_brotli_commit }}
